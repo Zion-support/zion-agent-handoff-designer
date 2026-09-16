@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zion Agent Handoff Designer</title>
+<meta name="description" content="Design multi-agent delegation flows: define agents, handoff rules and guardrails, export as JSON. Free tool by Zion Tech Group.">
+<style>
+:root{--bg:#0b0d14;--card:#141a28;--acc:#93c5fd;--txt:#eaf0fc;--mut:#98a6c6}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--txt)}
+header{padding:48px 24px 24px;text-align:center;background:linear-gradient(160deg,#122a55,#0b0d14)}
+h1{margin:0 0 8px}.wrap{max-width:960px;margin:0 auto;padding:24px}
+.panel{background:var(--card);border:1px solid #23345a;border-radius:14px;padding:20px;margin-bottom:20px}
+label{display:block;font-size:.85rem;color:var(--mut);margin:10px 0 4px}
+input,select,textarea{width:100%;padding:9px;border-radius:8px;border:1px solid #2d4470;background:#0f1524;color:var(--txt)}
+.row{display:grid;grid-template-columns:2fr 2fr 1fr auto;gap:10px;align-items:end;margin-bottom:8px}
+button{padding:10px 18px;border:0;border-radius:10px;background:var(--acc);color:#0a1830;font-weight:700;cursor:pointer}
+.flow{font-family:ui-monospace,monospace;font-size:.9rem;line-height:2}
+.arrow{color:var(--acc)}
+.agent{display:inline-block;background:#1b2a47;border:1px solid #2d4470;border-radius:10px;padding:6px 14px;margin:2px}
+.human{border-color:#f59e0b;background:#2a2113}
+pre{background:#0e1320;border:1px solid #23345a;border-radius:12px;padding:16px;font-size:.82rem;overflow:auto}
+footer{padding:32px 24px;text-align:center;color:var(--mut);font-size:.85rem;border-top:1px solid #1a2640;margin-top:40px}
+footer a{color:var(--acc);text-decoration:none;margin:0 8px}
+</style>
+</head>
+<body>
+<header><h1>🔀 Zion Agent Handoff Designer</h1>
+<p>Define agents and handoff rules, visualize the flow, export JSON for LangGraph/OpenAI Agents SDK.</p></header>
+<div class="wrap">
+<div class="panel">
+<div class="row"><div><label>From agent</label><input id="from" value="triage"></div>
+<div><label>To agent (or human)</label><input id="to" value="specialist"></div>
+<div><label>Condition</label><input id="cond" value="intent != faq"></div>
+<div><button onclick="add()">+ Add</button></div></div>
+<small style="color:var(--mut)">Use agent name <b>human</b> to mark human-in-the-loop handoffs (shown in amber).</small>
+</div>
+<div class="panel"><h3 style="margin-top:0">Flow</h3><div class="flow" id="flow"></div></div>
+<div class="panel" style="display:none" id="r2"><h3 style="margin-top:0">Export</h3><pre id="json"></pre><button onclick="dl()">Download JSON</button></div>
+</div>
+<footer>Part of the <a href="https://ziontechgroup.com">Zion Tech Group</a> AI apps network ·
+<a href="https://ziontechgroup.com/zion-agent-stack-builder/">Stack Builder</a>
+<a href="https://ziontechgroup.com/zion-agent-contract-tester/">Contract Tester</a>
+<a href="https://ziontechgroup.com/ai-agent-development/">Zion agent development</a></footer>
+<script>
+let edges=[{f:'triage',t:'specialist',c:'intent != faq'},{f:'triage',t:'faq-bot',c:'intent == faq'},{f:'specialist',t:'human',c:'confidence < 0.7 or amount > $500'}];
+function render(){
+const agents=[...new Set(edges.flatMap(e=>[e.f,e.t]))];
+document.getElementById('flow').innerHTML=agents.map(a=>`<span class="agent ${a==='human'?'human':''}">${a==='human'?'🧑 human':'🤖 '+a}</span>`).join('')+'<br><br>'+edges.map(e=>`<span class="arrow">${e.f}</span> —[${e.c}]→ <b>${e.t}</b>`).join('<br>');
+const g={agents:agents.map(a=>({name:a,type:a==='human'?'human':'agent'})),handoffs:edges.map(e=>({from:e.f,to:e.t,when:e.c}))};
+document.getElementById('json').textContent=JSON.stringify(g,null,2);document.getElementById('r2').style.display='block';window._doc=JSON.stringify(g,null,2);}
+function add(){edges.push({f:document.getElementById('from').value,t:document.getElementById('to').value,c:document.getElementById('cond').value||'always'});render();}
+function dl(){const b=new Blob([window._doc],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='agent-handoffs.json';a.click();}
+render();
+</script>
+</body>
+</html>
